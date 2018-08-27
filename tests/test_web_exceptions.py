@@ -5,8 +5,10 @@ from unittest import mock
 
 import pytest
 
-from aiohttp import helpers, signals, web
+from aiohttp import helpers, signals, web, HttpVersion11
 from aiohttp.test_utils import make_mocked_request
+from aiohttp.web_exceptions import HTTPExpectationFailed
+from aiohttp.web_urldispatcher import _default_expect_handler
 
 
 @pytest.fixture
@@ -184,3 +186,18 @@ def test_HTTPException_retains_cause():
     tb = ''.join(format_exception(ei.type, ei.value, ei.tb))
     assert 'CustomException' in tb
     assert 'direct cause' in tb
+
+
+async def test_HTTPExpectationFailed_sanitize():
+    request = mock.MagicMock()
+    request.version = HttpVersion11
+    request.headers = {
+        'Expect': '<a href="badsite.com">go here</a>'
+    }
+
+    with pytest.raises(HTTPExpectationFailed) as err:
+        await _default_expect_handler(request)
+
+    escaped = 'Unknown Expect: ' \
+              '&lt;a href=&quot;badsite.com&quot;&gt;go here&lt;/a&gt;'
+    assert err.value.text == escaped

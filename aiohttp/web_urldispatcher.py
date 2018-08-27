@@ -3,6 +3,7 @@ import asyncio
 import base64
 import collections
 import hashlib
+import html
 import inspect
 import keyword
 import os
@@ -247,7 +248,8 @@ async def _default_expect_handler(request):
             await request.writer.write(
                 b"HTTP/1.1 100 Continue\r\n\r\n", drain=False)
         else:
-            raise HTTPExpectationFailed(text="Unknown Expect: %s" % expect)
+            raise HTTPExpectationFailed(
+                text="Unknown Expect: %s" % html.escape(expect))
 
 
 class Resource(AbstractResource):
